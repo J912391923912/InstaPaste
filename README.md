@@ -1,28 +1,26 @@
 # SnapPaste
 
-Instant screenshots for working with AI. Press a key combo, the screenshot is saved AND copied. Just paste it anywhere with Ctrl+V.
+One key screenshots for working with AI. Press a key, the screenshot is saved AND copied. Paste it anywhere with Ctrl+V.
 
-## Shortcuts
+## Keys (you can change them)
 
-| Keys | What it does |
+| Key | What it does |
 |---|---|
-| **Ctrl + Shift + 1** | Full screen (the screen your mouse is on) |
-| **Ctrl + Shift + 2** | Drag to pick an area (Esc or right click to cancel) |
-
-Every screenshot is saved to **Pictures\SnapPaste** and copied, ready to paste.
+| **Print Screen** | Drag to pick an area (Esc or right click to cancel) |
+| **F9** | Full screen (the screen your mouse is on) |
 
 ## Setup (once)
 
-1. Click the green **Code** button on GitHub, then **Download ZIP**.
-2. Unzip it somewhere you will keep it (for example Documents\SnapPaste).
+1. Click the green **Code** button, then **Download ZIP**.
+2. Unzip it somewhere you will keep it (for example Documents).
 3. Double click **Start SnapPaste.bat**.
-4. A small purple icon appears near the clock. Done.
+4. The settings window opens. Pick your keys, then click **Done**.
 
-## Tray icon (near the clock)
+## Find it later
 
-Right click it to:
-- Open the screenshots folder
-- Turn on **Start with Windows** (so it is always ready)
-- Quit
+SnapPaste lives near the clock, under **Show hidden icons ( ^ )**.
+Click the purple icon to open settings. Right click it for quick actions.
+
+Tip: turn on **Start with Windows** so it is always ready.
 
 Works on Windows 10 and 11. Nothing to install.
