@@ -1,4 +1,4 @@
-# SnapPaste
+# InstaPaste
 
 One key screenshots for working with AI. Press a key, the screenshot is saved AND copied. Paste it anywhere with Ctrl+V.
 
@@ -13,12 +13,12 @@ One key screenshots for working with AI. Press a key, the screenshot is saved AN
 
 1. Click the green **Code** button, then **Download ZIP**.
 2. Unzip it somewhere you will keep it (for example Documents).
-3. Double click **Start SnapPaste.bat**.
+3. Double click **Start InstaPaste.bat**.
 4. The settings window opens. Pick your keys, then click **Done**.
 
 ## Find it later
 
-SnapPaste lives near the clock, under **Show hidden icons ( ^ )**.
+InstaPaste lives near the clock, under **Show hidden icons ( ^ )**.
 Click the purple icon to open settings. Right click it for quick actions.
 
 Tip: turn on **Start with Windows** so it is always ready.

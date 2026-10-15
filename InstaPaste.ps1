@@ -1,4 +1,4 @@
-# SnapPaste: one key screenshots. Saved to a folder and copied, ready to paste.
+# InstaPaste: one key screenshots. Saved to a folder and copied, ready to paste.
 
 $ErrorActionPreference = 'Stop'
 
@@ -15,7 +15,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-namespace SnapPaste
+namespace InstaPaste
 {
     public static class Theme
     {
@@ -106,12 +106,12 @@ namespace SnapPaste
 
         static string FilePath
         {
-            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SnapPaste", "settings.txt"); }
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InstaPaste", "settings.txt"); }
         }
 
         public static void Load()
         {
-            Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "SnapPaste");
+            Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "InstaPaste");
             if (!File.Exists(FilePath)) { FirstRun = true; return; }
             foreach (string line in File.ReadAllLines(FilePath))
             {
@@ -147,16 +147,16 @@ namespace SnapPaste
             get
             {
                 using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RunKey))
-                    return k != null && k.GetValue("SnapPaste") != null;
+                    return k != null && k.GetValue("InstaPaste") != null;
             }
             set
             {
                 using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RunKey))
                 {
                     if (value)
-                        k.SetValue("SnapPaste", "powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + App.ScriptPath + "\"");
+                        k.SetValue("InstaPaste", "powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + App.ScriptPath + "\"");
                     else
-                        k.DeleteValue("SnapPaste", false);
+                        k.DeleteValue("InstaPaste", false);
                 }
             }
         }
@@ -229,7 +229,7 @@ namespace SnapPaste
         [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
 
         public static string ScriptPath;
-        const string ShowEventName = "SnapPaste_ShowSettings";
+        const string ShowEventName = "InstaPaste_ShowSettings";
 
         public static void Run(string scriptPath)
         {
@@ -237,7 +237,7 @@ namespace SnapPaste
             catch { try { SetProcessDPIAware(); } catch { } }
 
             bool created;
-            Mutex mutex = new Mutex(true, "SnapPaste_SingleInstance", out created);
+            Mutex mutex = new Mutex(true, "InstaPaste_SingleInstance", out created);
             if (!created)
             {
                 try { EventWaitHandle.OpenExisting(ShowEventName).Set(); } catch { }
@@ -263,7 +263,7 @@ namespace SnapPaste
             if (Settings.Save)
             {
                 Directory.CreateDirectory(Settings.Folder);
-                string name = "SnapPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
+                string name = "InstaPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
                 bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
             }
             if (Settings.Copy)
@@ -295,7 +295,7 @@ namespace SnapPaste
 
             tray = new NotifyIcon();
             tray.Icon = Icon.FromHandle(Theme.Logo(32).GetHicon());
-            tray.Text = "SnapPaste";
+            tray.Text = "InstaPaste";
             tray.Visible = true;
             tray.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) ShowSettings(); };
 
@@ -308,7 +308,7 @@ namespace SnapPaste
             menu.Items.Add("Settings", null, delegate { ShowSettings(); });
             menu.Items.Add("Open screenshots folder", null, delegate { OpenFolder(); });
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Quit SnapPaste", null, delegate { Close(); });
+            menu.Items.Add("Quit InstaPaste", null, delegate { Close(); });
             menu.Opening += delegate {
                 fullItem.Text = "Full screen   (" + Theme.KeyName(Settings.Full) + ")";
                 areaItem.Text = "Pick an area   (" + Theme.KeyName(Settings.Area) + ")";
@@ -335,7 +335,7 @@ namespace SnapPaste
             }
             else
             {
-                Toast.Show("SnapPaste is ready");
+                Toast.Show("InstaPaste is ready");
             }
         }
 
@@ -384,7 +384,7 @@ namespace SnapPaste
                 Rectangle b = Screen.FromPoint(Cursor.Position).Bounds;
                 using (Bitmap bmp = Grab(b)) App.Deliver(bmp);
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message, "SnapPaste"); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "InstaPaste"); }
             finally { busy = false; }
         }
 
@@ -403,7 +403,7 @@ namespace SnapPaste
                         using (Bitmap r = f.Result) App.Deliver(r);
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message, "SnapPaste"); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "InstaPaste"); }
             finally { busy = false; }
         }
 
@@ -431,7 +431,7 @@ namespace SnapPaste
         {
             using (Graphics g = CreateGraphics()) scale = g.DpiX / 96f;
 
-            Text = "SnapPaste";
+            Text = "InstaPaste";
             Icon = Icon.FromHandle(Theme.Logo(32).GetHicon());
             AutoScaleMode = AutoScaleMode.None;
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -447,7 +447,7 @@ namespace SnapPaste
             fCaps = new Font("Segoe UI Semibold", 8f);
             fTitle = new Font("Segoe UI Semibold", 17f);
 
-            AddLabel("SnapPaste", 78, 18, 300, 36, fTitle, Theme.Text, Theme.Bg);
+            AddLabel("InstaPaste", 78, 18, 300, 36, fTitle, Theme.Text, Theme.Bg);
             AddLabel("Screenshot, saved and copied. Just paste.", 80, 54, 340, 22, fSmall, Theme.Muted, Theme.Bg);
 
             // Shortcuts
@@ -483,7 +483,7 @@ namespace SnapPaste
             AddToggle("Start with Windows", 544, Settings.StartupOn, delegate(bool v) { Settings.StartupOn = v; });
 
             // Footer
-            AddLabel("Find SnapPaste near the clock, under Show hidden icons ( ^ ).", 26, 610, 240, 40, fSmall, Theme.Muted, Theme.Bg);
+            AddLabel("Find InstaPaste near the clock, under Show hidden icons ( ^ ).", 26, 610, 240, 40, fSmall, Theme.Muted, Theme.Bg);
             FlatBtn quit = new FlatBtn("Quit", false);
             quit.Click += delegate { Application.Exit(); };
             Place(quit, 276, 612, 76, 38);
@@ -523,7 +523,7 @@ namespace SnapPaste
         {
             using (FolderBrowserDialog d = new FolderBrowserDialog())
             {
-                d.Description = "Where should SnapPaste save your screenshots?";
+                d.Description = "Where should InstaPaste save your screenshots?";
                 d.SelectedPath = Settings.Folder;
                 if (d.ShowDialog(this) == DialogResult.OK)
                 {
@@ -874,9 +874,9 @@ namespace SnapPaste
 }
 '@
 
-[SnapPaste.App]::Run($PSCommandPath)
+[InstaPaste.App]::Run($PSCommandPath)
 }
 catch {
     Add-Type -AssemblyName System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show("SnapPaste could not start:`n`n" + $_.Exception.Message, "SnapPaste") | Out-Null
+    [System.Windows.Forms.MessageBox]::Show("InstaPaste could not start:`n`n" + $_.Exception.Message, "InstaPaste") | Out-Null
 }
