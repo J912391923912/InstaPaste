@@ -109,9 +109,14 @@ namespace InstaPaste
             get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InstaPaste", "settings.txt"); }
         }
 
+        public static string DefaultFolder
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "InstaPaste"); }
+        }
+
         public static void Load()
         {
-            Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "InstaPaste");
+            Folder = DefaultFolder;
             if (!File.Exists(FilePath)) { FirstRun = true; return; }
             foreach (string line in File.ReadAllLines(FilePath))
             {
@@ -122,7 +127,7 @@ namespace InstaPaste
                 {
                     if (k == "Full") Full = (Keys)int.Parse(v);
                     if (k == "Area") Area = (Keys)int.Parse(v);
-                    if (k == "Folder" && v.Length > 0) Folder = v;
+                    if (k == "Folder" && v.Length > 0 && v.IndexOf("Pictures", StringComparison.OrdinalIgnoreCase) < 0) Folder = v;
                     if (k == "Copy") Copy = v == "1";
                     if (k == "Save") Save = v == "1";
                     if (k == "Popup") Popup = v == "1";
@@ -260,12 +265,6 @@ namespace InstaPaste
 
         public static void Deliver(Bitmap bmp)
         {
-            if (Settings.Save)
-            {
-                Directory.CreateDirectory(Settings.Folder);
-                string name = "InstaPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
-                bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
-            }
             if (Settings.Copy)
             {
                 DataObject data = new DataObject();
@@ -274,6 +273,27 @@ namespace InstaPaste
                 bmp.Save(png, ImageFormat.Png);
                 data.SetData("PNG", false, png);
                 try { Clipboard.SetDataObject(data, true, 10, 100); } catch { }
+            }
+            if (Settings.Save)
+            {
+                string name = "InstaPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
+                try
+                {
+                    Directory.CreateDirectory(Settings.Folder);
+                    bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
+                }
+                catch
+                {
+                    // Folder blocked (for example by Windows ransomware protection): use the safe default instead
+                    try
+                    {
+                        Settings.Folder = Settings.DefaultFolder;
+                        Settings.Store();
+                        Directory.CreateDirectory(Settings.Folder);
+                        bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
+                    }
+                    catch { }
+                }
             }
             if (Settings.Popup)
                 Toast.Show(Settings.Copy ? "Copied! Paste with Ctrl+V" : "Saved to folder");
