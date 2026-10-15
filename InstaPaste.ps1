@@ -101,7 +101,7 @@ namespace InstaPaste
         public static Keys Full = Keys.F9;
         public static Keys Area = Keys.Snapshot;
         public static string Folder;
-        public static bool Copy = true, Save = true, Popup = true;
+        public static bool Copy = true, Save = true, Popup = true, Group = true;
         public static bool FirstRun;
 
         static string FilePath
@@ -131,6 +131,7 @@ namespace InstaPaste
                     if (k == "Copy") Copy = v == "1";
                     if (k == "Save") Save = v == "1";
                     if (k == "Popup") Popup = v == "1";
+                    if (k == "Group") Group = v == "1";
                 }
                 catch { }
             }
@@ -141,7 +142,7 @@ namespace InstaPaste
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
             File.WriteAllLines(FilePath, new string[] {
                 "Full=" + (int)Full, "Area=" + (int)Area, "Folder=" + Folder,
-                "Copy=" + (Copy ? "1" : "0"), "Save=" + (Save ? "1" : "0"), "Popup=" + (Popup ? "1" : "0")
+                "Copy=" + (Copy ? "1" : "0"), "Save=" + (Save ? "1" : "0"), "Popup=" + (Popup ? "1" : "0"), "Group=" + (Group ? "1" : "0")
             });
         }
 
@@ -263,40 +264,75 @@ namespace InstaPaste
             GC.KeepAlive(mutex);
         }
 
+        static List<string> batch = new List<string>();
+        static DateTime lastShot = DateTime.MinValue;
+
         public static void Deliver(Bitmap bmp)
         {
+            string name = "InstaPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
+            string saved = null;
+            if (Settings.Save) saved = SaveTo(bmp, Settings.Folder, name);
+            if (saved == null && Settings.Save)
+            {
+                // Folder blocked (for example by Windows ransomware protection): use the safe default instead
+                Settings.Folder = Settings.DefaultFolder;
+                Settings.Store();
+                saved = SaveTo(bmp, Settings.Folder, name);
+            }
+
+            int count = 1;
             if (Settings.Copy)
             {
+                // Screenshots taken within 30 seconds of each other are copied together
+                if (Settings.Group && (DateTime.Now - lastShot).TotalSeconds <= 30 && batch.Count > 0)
+                {
+                    string file = saved ?? SaveTo(bmp, Path.Combine(Path.GetTempPath(), "InstaPaste"), name);
+                    if (file != null) batch.Add(file);
+                }
+                else
+                {
+                    batch.Clear();
+                    string file = saved ?? (Settings.Group ? SaveTo(bmp, Path.Combine(Path.GetTempPath(), "InstaPaste"), name) : null);
+                    if (file != null) batch.Add(file);
+                }
+                lastShot = DateTime.Now;
+
                 DataObject data = new DataObject();
-                data.SetImage(bmp);
-                MemoryStream png = new MemoryStream();
-                bmp.Save(png, ImageFormat.Png);
-                data.SetData("PNG", false, png);
+                if (batch.Count > 1)
+                {
+                    System.Collections.Specialized.StringCollection files = new System.Collections.Specialized.StringCollection();
+                    foreach (string f in batch) if (File.Exists(f)) files.Add(f);
+                    data.SetFileDropList(files);
+                    count = files.Count;
+                }
+                else
+                {
+                    data.SetImage(bmp);
+                    MemoryStream png = new MemoryStream();
+                    bmp.Save(png, ImageFormat.Png);
+                    data.SetData("PNG", false, png);
+                }
                 try { Clipboard.SetDataObject(data, true, 10, 100); } catch { }
             }
-            if (Settings.Save)
-            {
-                string name = "InstaPaste_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".png";
-                try
-                {
-                    Directory.CreateDirectory(Settings.Folder);
-                    bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
-                }
-                catch
-                {
-                    // Folder blocked (for example by Windows ransomware protection): use the safe default instead
-                    try
-                    {
-                        Settings.Folder = Settings.DefaultFolder;
-                        Settings.Store();
-                        Directory.CreateDirectory(Settings.Folder);
-                        bmp.Save(Path.Combine(Settings.Folder, name), ImageFormat.Png);
-                    }
-                    catch { }
-                }
-            }
+
             if (Settings.Popup)
-                Toast.Show(Settings.Copy ? "Copied! Paste with Ctrl+V" : "Saved to folder");
+            {
+                if (!Settings.Copy) Toast.Show("Saved to folder");
+                else if (count > 1) Toast.Show(count + " screenshots copied! Paste with Ctrl+V");
+                else Toast.Show("Copied! Paste with Ctrl+V");
+            }
+        }
+
+        static string SaveTo(Bitmap bmp, string folder, string name)
+        {
+            try
+            {
+                Directory.CreateDirectory(folder);
+                string path = Path.Combine(folder, name);
+                bmp.Save(path, ImageFormat.Png);
+                return path;
+            }
+            catch { return null; }
         }
     }
 
@@ -460,7 +496,7 @@ namespace InstaPaste
             BackColor = Theme.Bg;
             ForeColor = Theme.Text;
             DoubleBuffered = true;
-            ClientSize = new Size(S(480), S(668));
+            ClientSize = new Size(S(480), S(712));
 
             fBody = new Font("Segoe UI", 10.5f);
             fSmall = new Font("Segoe UI", 9f);
@@ -496,20 +532,21 @@ namespace InstaPaste
             Place(open, 360, 326, 76, 36);
 
             // Options
-            cards.Add(new Rectangle(24, 400, 432, 196));
+            cards.Add(new Rectangle(24, 400, 432, 240));
             AddToggle("Copy so I can paste it", 412, Settings.Copy, delegate(bool v) { Settings.Copy = v; Settings.Store(); });
             AddToggle("Save it to the folder", 456, Settings.Save, delegate(bool v) { Settings.Save = v; Settings.Store(); });
             AddToggle("Show a little popup", 500, Settings.Popup, delegate(bool v) { Settings.Popup = v; Settings.Store(); });
-            AddToggle("Start with Windows", 544, Settings.StartupOn, delegate(bool v) { Settings.StartupOn = v; });
+            AddToggle("Group shots taken within 30 sec", 544, Settings.Group, delegate(bool v) { Settings.Group = v; Settings.Store(); });
+            AddToggle("Start with Windows", 588, Settings.StartupOn, delegate(bool v) { Settings.StartupOn = v; });
 
             // Footer
-            AddLabel("Find InstaPaste near the clock, under Show hidden icons ( ^ ).", 26, 610, 240, 40, fSmall, Theme.Muted, Theme.Bg);
+            AddLabel("Find InstaPaste near the clock, under Show hidden icons ( ^ ).", 26, 654, 240, 40, fSmall, Theme.Muted, Theme.Bg);
             FlatBtn quit = new FlatBtn("Quit", false);
             quit.Click += delegate { Application.Exit(); };
-            Place(quit, 276, 612, 76, 38);
+            Place(quit, 276, 656, 76, 38);
             FlatBtn done = new FlatBtn("Done", true);
             done.Click += delegate { Hide(); };
-            Place(done, 360, 612, 96, 38);
+            Place(done, 360, 656, 96, 38);
         }
 
         Label AddLabel(string text, float x, float y, float w, float h, Font f, Color c, Color bg)
